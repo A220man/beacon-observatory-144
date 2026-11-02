@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import '@testing-library/jest-dom'
 import App from './App'
 
 vi.mock('@react-three/fiber', () => ({
@@ -14,8 +15,17 @@ vi.mock('@react-three/drei', () => ({
 }))
 
 describe('App', () => {
-  it('renders header', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ models: [] })
+    }))
+  })
+
+  it('renders header', async () => {
     render(<App />)
-    expect(screen.getByText('Beacon Observatory')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('Beacon Observatory')).toBeInTheDocument()
+    })
   })
 })
