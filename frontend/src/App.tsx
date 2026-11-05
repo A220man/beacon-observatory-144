@@ -179,13 +179,22 @@ function App() {
         <section style={styles.viewer}>
           <div style={styles.viewerInner}>
             {selectedModel ? (
-              <Canvas camera={{ position: [50, 50, 50], fov: 50 }}>
-                <ambientLight intensity={0.8} />
-                <directionalLight position={[100, 100, 50]} intensity={1} />
-                <ViewerCanvas modelUrl={`/api/models/${selectedModel.id}`} format={selectedModel.format} />
-                <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
-                <gridHelper args={[200, 20, '#e0e0e0', '#e0e0e0']} />
-              </Canvas>
+              <>
+                <div style={{ padding: '1rem', borderBottom: '1px solid #e9ecef', background: '#fafafa' }}>
+                  <div style={{ fontWeight: 600, color: '#212529', fontSize: '1rem' }}>{selectedModel.id}</div>
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', fontSize: '0.875rem', color: '#6c757d' }}>
+                    <span>Format: {selectedModel.format}</span>
+                    <span>Size: {(selectedModel.size_bytes / 1024).toFixed(1)} KB</span>
+                  </div>
+                </div>
+                <Canvas camera={{ position: [50, 50, 50], fov: 50 }}>
+                  <ambientLight intensity={0.8} />
+                  <directionalLight position={[100, 100, 50]} intensity={1} />
+                  <ViewerCanvas modelUrl={`/api/models/${selectedModel.id}`} format={selectedModel.format} />
+                  <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
+                  <gridHelper args={[200, 20, '#e0e0e0', '#e0e0e0']} />
+                </Canvas>
+              </>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '600px', color: '#666' }}>
                 Select a model to view
