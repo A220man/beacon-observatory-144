@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "current_feature": "continue-implementation",
+  "current_feature": "model-info-display",
   "features": [
     {
       "id": "continue-implementation",
@@ -16,6 +16,20 @@
       ],
       "tests": [
         "backend/test_main.py",
+        "frontend/src/App.test.tsx"
+      ]
+    },
+    {
+      "id": "model-info-display",
+      "title": "Display model metadata in viewer area",
+      "status": "done",
+      "acceptance": [
+        "Selected model shows name, format, and file size in viewer header"
+      ],
+      "implementation": [
+        "frontend/src/App.tsx"
+      ],
+      "tests": [
         "frontend/src/App.test.tsx"
       ]
     }
