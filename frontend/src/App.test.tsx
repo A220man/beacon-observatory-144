@@ -28,4 +28,35 @@ describe('App', () => {
       expect(screen.getByText('Beacon Observatory')).toBeInTheDocument()
     })
   })
+
+  it('displays model info when model is selected', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ models: [{ id: 'cube', format: '.stl', size_bytes: 1405 }] })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(100))
+      })
+    )
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Beacon Observatory')).toBeInTheDocument()
+    })
+
+    // Click on the model in the sidebar
+    await waitFor(() => {
+      expect(screen.getByText('cube')).toBeInTheDocument()
+    })
+    screen.getByText('cube').click()
+
+    // Check that model info is displayed
+    await waitFor(() => {
+      expect(screen.getByText('Format: .stl')).toBeInTheDocument()
+      expect(screen.getByText('Size: 1.4 KB')).toBeInTheDocument()
+    })
+  })
 })

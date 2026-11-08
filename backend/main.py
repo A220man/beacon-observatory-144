@@ -14,7 +14,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODELS_DIR = Path(os.getenv("MODELS_DIR", "/app/models")).resolve()
+# Default to models/ relative to project root for local dev, /app/models for Docker
+DEFAULT_MODELS_DIR = Path(__file__).parent.parent / "models"
+MODELS_DIR = Path(os.getenv("MODELS_DIR", str(DEFAULT_MODELS_DIR))).resolve()
 
 @app.get("/health")
 def health():

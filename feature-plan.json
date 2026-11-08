@@ -32,6 +32,24 @@
       "tests": [
         "frontend/src/App.test.tsx"
       ]
+    },
+    {
+      "id": "step-support",
+      "title": "STEP file format support",
+      "status": "planned",
+      "acceptance": [
+        "Backend serves .step/.stp files from models directory",
+        "Frontend loads and renders STEP files using three-stdlib STEPLoader",
+        "Model info shows STEP format correctly"
+      ],
+      "implementation": [
+        "backend/main.py",
+        "frontend/src/App.tsx"
+      ],
+      "tests": [
+        "backend/test_main.py",
+        "frontend/src/App.test.tsx"
+      ]
     }
   ]
 }
