@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "current_feature": "model-info-display",
+  "current_feature": "step-support",
   "features": [
     {
       "id": "continue-implementation",
@@ -36,10 +36,10 @@
     {
       "id": "step-support",
       "title": "STEP file format support",
-      "status": "planned",
+      "status": "done",
       "acceptance": [
         "Backend serves .step/.stp files from models directory",
-        "Frontend loads and renders STEP files using three-stdlib STEPLoader",
+        "Frontend loads and renders STEP files using three-stdlib AssimpLoader",
         "Model info shows STEP format correctly"
       ],
       "implementation": [

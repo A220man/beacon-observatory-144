@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { STLLoader, GLTFLoader, OBJLoader } from 'three-stdlib'
+import { STLLoader, GLTFLoader, OBJLoader, AssimpLoader } from 'three-stdlib'
 import * as THREE from 'three'
 
 interface Model {
@@ -30,22 +30,26 @@ function mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeomet
     offset = 0
     for (const g of geometries) {
       const norm = g.getAttribute('normal')
-      if (norm) mergedNormal.set(norm.array, offset)
-      offset += norm.count * 3
+      if (norm) {
+        mergedNormal.set(norm.array, offset)
+        offset += norm.count * 3
+      }
     }
     merged.setAttribute('normal', new THREE.BufferAttribute(mergedNormal, 3))
   }
   
   const uvAttr = geometries[0].getAttribute('uv')
   if (uvAttr) {
-    const mergedUv = new Float32Array(totalVertices * 2)
+    const mergedUV = new Float32Array(totalVertices * 2)
     offset = 0
     for (const g of geometries) {
       const uv = g.getAttribute('uv')
-      if (uv) mergedUv.set(uv.array, offset)
-      offset += uv.count * 2
+      if (uv) {
+        mergedUV.set(uv.array, offset)
+        offset += uv.count * 2
+      }
     }
-    merged.setAttribute('uv', new THREE.BufferAttribute(mergedUv, 2))
+    merged.setAttribute('uv', new THREE.BufferAttribute(mergedUV, 2))
   }
   
   return merged
@@ -82,6 +86,19 @@ function ViewerCanvas({ modelUrl, format }: { modelUrl: string; format: string }
           const obj = loader.parse(data)
           const geometries: THREE.BufferGeometry[] = []
           obj.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.geometry) {
+              geometries.push(child.geometry)
+            }
+          })
+          if (geometries.length > 0) {
+            loadedGeometry = mergeGeometries(geometries)
+          }
+        } else if (format === '.step' || format === '.stp') {
+          const loader = new AssimpLoader()
+          const data = await fetch(modelUrl).then(r => r.arrayBuffer())
+          const object = loader.parse(data)
+          const geometries: THREE.BufferGeometry[] = []
+          object.scene.traverse((child) => {
             if (child instanceof THREE.Mesh && child.geometry) {
               geometries.push(child.geometry)
             }

@@ -4,7 +4,7 @@ Each round completes one feature or repair. Future items are planned, not implem
 
 ## Current round
 
-model-info-display
+step-support
 
 ## Roadmap
 
@@ -32,11 +32,11 @@ Tests: `frontend/src/App.test.tsx`
 
 ### step-support — STEP file format support
 
-Status: planned
+Status: done
 
 Acceptance:
 - Backend serves .step/.stp files from models directory
-- Frontend loads and renders STEP files using three-stdlib STEPLoader
+- Frontend loads and renders STEP files using three-stdlib AssimpLoader
 - Model info shows STEP format correctly
 
 Implementation: `backend/main.py`, `frontend/src/App.tsx`
