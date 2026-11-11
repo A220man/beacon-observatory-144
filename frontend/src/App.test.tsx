@@ -14,6 +14,18 @@ vi.mock('@react-three/drei', () => ({
   OBJLoader: vi.fn(),
 }))
 
+vi.mock('three-stdlib', () => ({
+  AssimpLoader: vi.fn().mockImplementation(() => ({
+    parse: vi.fn().mockReturnValue({
+      scene: {
+        traverse: vi.fn((callback) => {
+          callback({ geometry: { center: vi.fn() } })
+        })
+      }
+    })
+  }))
+}))
+
 describe('App', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
@@ -57,6 +69,37 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByText('Format: .stl')).toBeInTheDocument()
       expect(screen.getByText('Size: 1.4 KB')).toBeInTheDocument()
+    })
+  })
+
+  it('displays model info for STEP format', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ models: [{ id: 'part', format: '.step', size_bytes: 2048 }] })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(100))
+      })
+    )
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Beacon Observatory')).toBeInTheDocument()
+    })
+
+    // Click on the model in the sidebar
+    await waitFor(() => {
+      expect(screen.getByText('part')).toBeInTheDocument()
+    })
+    screen.getByText('part').click()
+
+    // Check that model info is displayed
+    await waitFor(() => {
+      expect(screen.getByText('Format: .step')).toBeInTheDocument()
+      expect(screen.getByText('Size: 2.0 KB')).toBeInTheDocument()
     })
   })
 })
