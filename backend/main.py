@@ -18,32 +18,58 @@ app.add_middleware(
 DEFAULT_MODELS_DIR = Path(__file__).parent.parent / "models"
 MODELS_DIR = Path(os.getenv("MODELS_DIR", str(DEFAULT_MODELS_DIR))).resolve()
 
+# Simple cache for model list: {models: [...], last_fetched: timestamp}
+_model_cache: dict = {"models": [], "last_fetched": 0}
+CACHE_TTL = 5
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "beacon-observatory"}
 
 @app.get("/api/models")
 def list_models():
+    now = os.time()
+    if now - _model_cache["last_fetched"] < CACHE_TTL:
+        return _model_cache
     if not MODELS_DIR.exists():
-        return {"models": []}
+        _model_cache = {"models": [], "last_fetched": now}
+        return _model_cache
     models = []
-    for path in MODELS_DIR.iterdir():
-        if path.suffix.lower() in [".stl", ".step", ".stp", ".obj", ".gltf", ".glb"]:
+    try:
+        for entry in MODELS_DIR.iterdir():
+            if not entry.is_file():
+                continue
+            suffix = entry.suffix.lower()
+            if suffix not in [".stl", ".step", ".stp", ".obj", ".gltf", ".glb"]:
+                continue
+            try:
+                size = entry.stat().st_size
+            except OSError:
+                continue
             models.append({
-                "id": path.stem,
-                "format": path.suffix.lower(),
-                "size_bytes": path.stat().st_size
+                "id": entry.stem,
+                "format": suffix,
+                "size_bytes": size
             })
-    return {"models": models}
+    except OSError:
+        pass
+    _model_cache = {"models": models, "last_fetched": now}
+    return _model_cache
 
 @app.get("/api/models/{model_id}")
 def get_model(model_id: str):
+    if ".." in model_id or model_id.startswith("/") or "." * len(model_id) > 0:
+        raise HTTPException(400, "Invalid model ID")
     for ext in [".stl", ".step", ".stp", ".obj", ".gltf", ".glb"]:
         path = MODELS_DIR / f"{model_id}{ext}"
-        if path.exists():
-            return FileResponse(path, media_type="application/octet-stream", filename=path.name)
+        try:
+            if path.is_file() and path.exists():
+                return FileResponse(path, media_type="application/octet-stream", filename=path.name)
+        except OSError:
+            continue
     raise HTTPException(404, "Model not found")
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
