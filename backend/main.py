@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import os
+import time
 
 app = FastAPI(title="Beacon Observatory", version="0.1.0")
 
@@ -28,11 +29,11 @@ def health():
 
 @app.get("/api/models")
 def list_models():
-    now = os.time()
+    now = int(time.time())
     if now - _model_cache["last_fetched"] < CACHE_TTL:
         return _model_cache
     if not MODELS_DIR.exists():
-        _model_cache = {"models": [], "last_fetched": now}
+        _model_cache["models"] = []; _model_cache["last_fetched"] = now
         return _model_cache
     models = []
     try:
@@ -53,12 +54,12 @@ def list_models():
             })
     except OSError:
         pass
-    _model_cache = {"models": models, "last_fetched": now}
+    _model_cache["models"] = models; _model_cache["last_fetched"] = now
     return _model_cache
 
 @app.get("/api/models/{model_id}")
 def get_model(model_id: str):
-    if ".." in model_id or model_id.startswith("/") or "." * len(model_id) > 0:
+    if ".." in model_id or model_id.startswith("/"):
         raise HTTPException(400, "Invalid model ID")
     for ext in [".stl", ".step", ".stp", ".obj", ".gltf", ".glb"]:
         path = MODELS_DIR / f"{model_id}{ext}"
