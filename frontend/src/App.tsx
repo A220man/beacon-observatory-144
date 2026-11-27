@@ -9,6 +9,110 @@ interface Model {
   format: string
   size_bytes: number
 }
+
+function mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  if (geometries.length === 1) return geometries[0]
+  const merged = new THREE.BufferGeometry()
+  const positionAttr = geometries[0].getAttribute('position')
+  const totalVertices = geometries.reduce((sum, g) => sum + g.getAttribute('position').count, 0)
+  const mergedPosition = new Float32Array(totalVertices * 3)
+  let offset = 0
+  for (const g of geometries) {
+    const pos = g.getAttribute('position')
+    mergedPosition.set(pos.array, offset)
+    offset += pos.count * 3
+  }
+  merged.setAttribute('position', new THREE.BufferAttribute(mergedPosition, 3))
+  
+  const normalAttr = geometries[0].getAttribute('normal')
+  if (normalAttr) {
+    const mergedNormal = new Float32Array(totalVertices * 3)
+    offset = 0
+    for (const g of geometries) {
+      const norm = g.getAttribute('normal')
+      if (norm) {
+        mergedNormal.set(norm.array, offset)
+        offset += norm.count * 3
+      }
+    }
+    merged.setAttribute('normal', new THREE.BufferAttribute(mergedNormal, 3))
+  }
+  
+  const uvAttr = geometries[0].getAttribute('uv')
+  if (uvAttr) {
+    const mergedUV = new Float32Array(totalVertices * 2)
+    offset = 0
+    for (const g of geometries) {
+      const uv = g.getAttribute('uv')
+      if (uv) {
+        mergedUV.set(uv.array, offset)
+        offset += uv.count * 2
+      }
+    }
+    merged.setAttribute('uv', new THREE.BufferAttribute(mergedUV, 2))
+  }
+  
+  return merged
+}
+
+function ViewerCanvas({ modelUrl, format }: { modelUrl: string; format: string }) {
+  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const loadModel = async () => {
+      try {
+        let loadedGeometry: THREE.BufferGeometry | null = null
+        if (format === '.stl') {
+          const loader = new STLLoader()
+          const data = await fetch(modelUrl).then(r => r.arrayBuffer())
+          loadedGeometry = loader.parse(data)
+        } else if (format === '.gltf' || format === '.glb') {
+          const loader = new GLTFLoader()
+          const gltf = await loader.loadAsync(modelUrl)
+          const geometries: THREE.BufferGeometry[] = []
+          gltf.scene.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.geometry) {
+              geometries.push(child.geometry)
+            }
+          })
+          if (geometries.length > 0) {
+            loadedGeometry = mergeGeometries(geometries)
+          }
+        } else if (format === '.obj') {
+          const loader = new OBJLoader()
+          const data = await fetch(modelUrl).then(r => r.text())
+          const obj = loader.parse(data)
+          const geometries: THREE.BufferGeometry[] = []
+          obj.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.geometry) {
+              geometries.push(child.geometry)
+            }
+          })
+          if (geometries.length > 0) {
+            loadedGeometry = mergeGeometries(geometries)
+          }
+        } else if (format === '.step' || format === '.stp') {
+          const loader = new AssimpLoader()
+          const data = await fetch(modelUrl).then(r => r.arrayBuffer())
+          const object = loader.parse(data)
+          const geometries: THREE.BufferGeometry[] = []
+          object.scene.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.geometry) {
+              geometries.push(child.geometry)
+            }
+          })
+          if (geometries.length > 0) {
+            loadedGeometry = mergeGeometries(geometries)
+          }
+        } else {
+          setError(`Unsupported format: ${format}`)
+          return
+        }
+        if (!cancelled && loadedGeometry) {
+          loadedGeometry.center()
+          setGeometry(loadedGeometry)
         }
       } catch (e) {
         if (!cancelled) setError(String(e))
@@ -121,50 +225,3 @@ function App() {
 }
 
 export default App
-function mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
-  if (geometries.length === 1) return geometries[0];
-  const merged = new THREE.BufferGeometry();
-  const totalVertices = geometries.reduce((sum, g) => sum + (g.getAttribute(\"position\") ? g.getAttribute(\"position\").count : 0), 0);
-  const mergedPosition = new Float32Array(totalVertices * 3);
-  let posOffset = 0;
-  for (const g of geometries) {
-    const pos = g.getAttribute(\"position\");
-    if (pos) {
-      mergedPosition.set(pos.array, posOffset);
-      posOffset += pos.count * 3;
-    }
-  }
-  merged.setAttribute(\"position\", new THREE.BufferAttribute(mergedPosition, 3));
-
-  const normalArrays: Float32Array[] = [];
-  for (const g of geometries) {
-    const norm = g.getAttribute(\"normal\");
-    if (norm) normalArrays.push(norm.array);
-  }
-  if (normalArrays.length > 0) {
-    const mergedNormal = new Float32Array(totalVertices * 3);
-    let normOffset = 0;
-    for (const arr of normalArrays) {
-      mergedNormal.set(arr, normOffset);
-      normOffset += arr.length / 3 * 3;
-    }
-    merged.setAttribute(\"normal\", new THREE.BufferAttribute(mergedNormal, 3));
-  }
-
-  const uvArrays: Float32Array[] = [];
-  for (const g of geometries) {
-    const uv = g.getAttribute(\"uv\");
-    if (uv) uvArrays.push(uv.array);
-  }
-  if (uvArrays.length > 0) {
-    const mergedUV = new Float32Array(totalVertices * 2);
-    let uvOffset = 0;
-    for (const arr of uvArrays) {
-      mergedUV.set(arr, uvOffset);
-      uvOffset += arr.length / 2 * 2;
-    }
-    merged.setAttribute(\"uv\", new THREE.BufferAttribute(mergedUV, 2));
-  }
-
-  return merged;
-}
